@@ -1,0 +1,6 @@
+
+*.o
+
+libasm.a
+
+test_libasm
