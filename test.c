@@ -46,12 +46,13 @@ void test_strcpy() {
         "Hello",
         "This is a test string",
         "Special\nchars\tincluded"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasadadaaaaaaaaaaaaaaaaaaaa"
     };
     
     int success = 1;
     for (size_t i = 0; i < sizeof(test_strings)/sizeof(char*); i++) {
-        char buf1[100] = {0};
-        char buf2[100] = {0};
+        char buf1[1000] = {0};
+        char buf2[1000] = {0};
         
         strcpy(buf1, test_strings[i]);
         char *ft_result = ft_strcpy(buf2, test_strings[i]);
@@ -132,8 +133,8 @@ void test_write() {
 void test_read() {
     printf("\n=== Testing ft_read ===\n");
     
-    char lib_buf[100] = {0};
-    char ft_buf[100] = {0};
+    char lib_buf[1000] = {0};
+    char ft_buf[1000] = {0};
     int success = 1;
     
     // Create a test file
