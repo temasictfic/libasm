@@ -1,12 +1,10 @@
 section .text
     global ft_strdup       ; char *strdup(const char *s)
-    extern malloc
-    extern ft_strlen
-    extern ft_strcpy
+    extern malloc          ; void *malloc(size_t size)
+    extern ft_strlen       ; size_t strlen(const char *s)
+    extern ft_strcpy       ; char *strcpy(char *dest, const char *src)
 
 ft_strdup:
-    push    rbp            ; Set up stack frame
-    mov     rbp, rsp
     push    rdi            ; Save source string pointer
     
     call    ft_strlen      ; Get length of string
@@ -21,11 +19,8 @@ ft_strdup:
     pop     rsi            ; Restore source string as second argument
     call    ft_strcpy      ; Copy string
     
-    mov     rsp, rbp       ; Clean up stack frame
-    pop     rbp
+
     ret                    ; Return pointer to new string
 .error:
-    mov     rsp, rbp       ; Clean up stack frame
-    pop     rbp
     xor     rax, rax       ; Return NULL
     ret

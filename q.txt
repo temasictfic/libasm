@@ -1,0 +1,414 @@
+Assembly Basics
+1. File Structure
+
+section .text: Contains executable code
+section .data: Contains initialized data
+section .bss: Contains uninitialized data
+global: Exports symbols for linking
+extern: Declares external symbols
+
+2. Basic Flow
+
+Programs execute sequentially
+Labels (like .loop:) mark locations
+Jumps alter execution flow
+Functions use call/ret
+
+3. Common Instructions in Files
+
+# Register Operations
+xor rax, rax      ; Clear register (faster than mov rax, 0)
+mov rax, rbx      ; Copy value
+inc rax           ; Increment
+dec rax           ; Decrement
+
+# Memory Operations
+mov byte [rdi], al     ; Store byte
+mov qword [rax], rdi   ; Store quadword
+push rax              ; Push to stack
+pop rax               ; Pop from stack
+
+# Comparison/Jumps
+cmp rax, rbx          ; Compare values
+test rax, rax         ; Efficient way to check if zero
+je  label            ; Jump if equal
+jne label            ; Jump if not equal
+jz  label            ; Jump if zero
+jl  label            ; Jump if less
+
+# Function Calls
+call function        ; Call function
+ret                 ; Return from function
+
+4. Instruction Variants
+
+# Size Variants
+mov al      ; 8-bit
+mov ax      ; 16-bit
+mov eax     ; 32-bit
+mov rax     ; 64-bit
+
+# Efficient Combinations
+lea rax, [rdi + 8]   ; Load effective address (add combined with mov)
+cmovz rax, rbx       ; Conditional move (combines cmp and mov)
+rep movsb            ; Repeat string operation (loop combined with mov)
+
+
+5. Stack Frame Management
+
+# Standard Prologue
+push rbp
+mov rbp, rsp
+
+# Standard Epilogue
+mov rsp, rbp
+pop rbp
+
+6. System Calls (Linux x86_64)
+
+mov rax, 1      ; System call number
+syscall         ; Execute system call
+
+-----------------------------------------------
+
+1. XOR Instruction (xor rax, rax)
+
+Purpose: Zeros out a register
+
+rax = 1010 (binary)
+xor rax, rax means:
+1010 XOR 1010 = 0000
+
+Used instead of mov rax, 0 because it's faster and smaller
+
+2. Memory Access (byte [rdi + rax])
+
+Syntax breakdown:
+
+byte: Size specifier (1 byte)
+[rdi + rax]: Memory address calculation
+rdi: Base address (pointer to string)
+rax: Offset (counter)
+
+Example:
+
+If:
+rdi = 0x1000 (base address of string "Hello")
+rax = 2 (current counter)
+
+Then:
+byte [rdi + rax] reads from address 0x1002, which contains 'l'
+
+Memory:
+0x1000: 'H'
+0x1001: 'e'
+0x1002: 'l' <- This byte is read
+0x1003: 'l'
+0x1004: 'o'
+0x1005: '\0'
+
+------------------------------------------------------------------
+x86_64 Registers RDI and RSI Explanation
+
+These registers have specific purposes in x86_64 calling convention:
+
+1. RDI (Register Destination Index)
+
+First argument to functions
+Historical use: destination for string operations
+64-bit register
+Can be accessed partially:
+
+rdi (64-bit) - full register
+edi (32-bit) - lower 32 bits
+di  (16-bit) - lower 16 bits
+dil (8-bit)  - lowest byte
+
+2.RSI (Register Source Index)
+
+Second argument to functions
+Historical use: source for string operations
+64-bit register
+Can be accessed partially:
+
+rsi (64-bit) - full register
+esi (32-bit) - lower 32 bits
+si  (16-bit) - lower 16 bits
+sil (8-bit)  - lowest byte
+
+3. Function Arguments Order (System V AMD64 ABI)
+
+1st argument: rdi
+2nd argument: rsi
+3rd argument: rdx
+4th argument: rcx
+5th argument: r8
+6th argument: r9
+Additional args: stack
+
+
+ft_strlen:
+    xor     rax, rax        ; counter = 0
+    ; rdi already contains pointer to string (1st argument)
+
+
+--------------------------------------------------------------
+
+
+1. Error Handling by OS
+
+Linux: Uses __errno_location
+macOS: Uses ___error
+Both return pointer to errno variable
+
+2. WRT ..plt Explanation
+
+WRT = With Respect To
+PLT = Procedure Linkage Table
+Used for external function calls in shared libraries
+Enables position-independent code
+
+3. Implementation Differences
+
+For Linux:
+
+extern __errno_location
+...
+call __errno_location WRT ..plt  ; Get errno address
+
+For macOs:
+
+
+extern ___error
+...
+call ___error                    ; Get errno address
+
+4. What They Do
+
+Return address where errno is stored
+Used to set error codes after syscall failures
+Example flow:
+Syscall fails (negative return)
+Call __errno_location/___error
+Store error code at returned address
+Return -1 to indicate error
+The WRT ..plt is specifically needed on Linux for proper linking with shared libraries, while macOS doesn't require it.
+
+----------------------------------------------------------------------------------------------------------------------------
+
+Register and Stack Frame Explanation
+
+1. Stack Frame Registers
+
+rsp (Stack Pointer): Points to top of stack
+rbp (Base Pointer): Points to base of current stack frame
+Stack frame setup:
+
+push rbp        ; Save old base pointer
+mov  rbp, rsp   ; Create new frame
+
+2. CL Register Hierarchy
+
+RAX (64-bit):
+  EAX (32-bit)
+    AX (16-bit)
+      AH (high 8-bit)
+      AL (low 8-bit)
+
+RCX (64-bit):
+  ECX (32-bit)
+    CX (16-bit)
+      CH (high 8-bit)
+      CL (low 8-bit)  <- Used in strcpy
+
+3. ft_strcpy flow
+
+mov rax, rdi       ; Save dest pointer for return
+mov cl, byte [rsi] ; Load byte from src to 8-bit register
+mov byte [rdi], cl ; Store byte to dest
+
+4. Why CL?
+
+cl is used as temporary 8-bit register
+Efficient for byte operations
+Not related to rax
+Part of rcx register family
+Common choice for byte-sized operations
+
+
+5. Stack Frame Usage
+
+High addresses
+    [old rbp]  <- rbp points here
+    [locals]   
+    [temps]    <- rsp points here
+Low addresses
+
+
+--------------------------------------------------
+
+1. Why Use Stack Frame?
+
+Standard function prologue/epilogue
+Allows consistent debugging and stack trace
+Needed if function:
+Has local variables
+Makes other function calls
+Needs to preserve registers
+
+
+2. Why Keep Stack Frame?
+
+Follows ABI (Application Binary Interface) conventions
+Makes debugging easier
+Maintains consistent calling convention
+Allows for future modifications without changing function interface
+Helps with stack unwinding during exceptions
+While this specific implementation doesn't need stack frame, it's kept for consistency and good practice.
+
+
+3. Stack Usage Examples in Assembly
+
+1. Local Variables Example
+
+section .text
+global example_local
+example_local:
+    push    rbp
+    mov     rbp, rsp
+    sub     rsp, 16        ; Reserve 16 bytes for two local variables
+    
+    mov     [rbp-8], rdi   ; Store first local variable
+    mov     [rbp-16], rsi  ; Store second local variable
+    
+    ; Use local variables
+    mov     rax, [rbp-8]
+    add     rax, [rbp-16]
+    
+    mov     rsp, rbp
+    pop     rbp
+    ret
+
+2. Function Calls Example
+
+section .text
+global nested_function
+extern printf
+
+nested_function:
+    push    rbp
+    mov     rbp, rsp
+    sub     rsp, 8         ; Align stack for function call
+    
+    push    rdi            ; Save arguments before call
+    push    rsi
+    
+    call    printf        ; Call another function
+    
+    pop     rsi           ; Restore arguments
+    pop     rdi
+    
+    mov     rsp, rbp
+    pop     rbp
+    ret
+
+3. Register Preservation Example
+
+section .text
+global preserve_regs
+preserve_regs:
+    push    rbp
+    mov     rbp, rsp
+    push    rbx            ; Preserve rbx (callee-saved register)
+    push    r12            ; Preserve r12 (callee-saved register)
+    
+    ; Use rbx and r12 for calculations
+    mov     rbx, rdi
+    mov     r12, rsi
+    imul    rbx, r12
+    
+    pop     r12            ; Restore preserved registers
+    pop     rbx
+    
+    mov     rsp, rbp
+    pop     rbp
+    ret
+
+
+4. Why Use Stack
+
+Limited number of registers available
+Registers needed for function's main operations
+Callee-saved registers must be preserved across function calls
+Stack provides large, flexible storage
+
+Example demonstrating why stack is needed:
+
+section .text
+global example
+example:
+    ; Try preserving values only in registers
+    mov r8, rbx   ; Save rbx in r8
+    mov r9, r12   ; Save r12 in r9
+    mov r10, r13  ; Save r13 in r10
+    mov r11, r14  ; Save r14 in r11
+    ; Problem: We've run out of registers!
+    ; What if we need more? Where to save r15?
+    ; What if we need these registers for calculations?
+
+Correct approach using stack:
+
+section .text
+global example
+example:
+    push rbp
+    mov rbp, rsp
+    push rbx      ; Can save unlimited registers
+    push r12      ; Each push adds to stack
+    push r13
+    push r14
+    push r15      ; No register conflicts!
+    
+    ; ... function code ...
+    
+    pop r15       ; Restore in reverse order
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    mov rsp, rbp
+    pop rbp
+    ret
+
+-----------------------------------------------------
+
+Stack Operations Explained (as Data Structure)
+
+push rdi        ; Save source string pointer to stack
+                ; Stack now: [source_ptr]
+
+...strlen and malloc calls happen...
+
+pop rsi         ; Pop source_ptr into rsi for strcpy
+                ; Stack is now empty
+                ; rsi now has original string ptr
+                ; rdi has new malloc'd ptr
+
+
+Why Push/Pop?
+
+ft_strlen needs source in rdi
+malloc needs size in rdi
+ft_strcpy needs:
+dest in rdi (malloc'd pointer)
+src in rsi (original string)
+Stack temporarily stores original pointer
+
+Function Call Flow
+
+1. push rdi         -> Save src ptr
+2. ft_strlen(rdi)   -> Returns len in rax
+3. malloc(rax + 1)  -> Returns ptr in rax
+4. pop rsi          -> Get original src ptr
+5. ft_strcpy(rdi, rsi) -> Copy string
+
