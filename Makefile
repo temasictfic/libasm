@@ -7,7 +7,7 @@ CFLAGS = -Wall -Wextra -Werror
 
 SRC = ft_strlen.s ft_strcpy.s ft_strcmp.s ft_write.s ft_read.s ft_strdup.s
 OBJ = $(SRC:.s=.o)
-TEST_SRC = test.c
+TEST_SRC = main.c
 INC = libasm.h
 
 all: $(NAME)

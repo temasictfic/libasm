@@ -110,6 +110,13 @@ void test_write() {
     ssize_t lib_result = write(1, test_str, len);
     ssize_t ft_result = ft_write(1, test_str, len);
     success &= (lib_result == ft_result);
+
+    // Test write to open file descriptor
+    int fd = open("test.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    lib_result = write(fd, test_str, len);
+    ft_result = ft_write(fd, test_str, len);
+    success &= (lib_result == ft_result);
+    close(fd);
     
     // Test error case (invalid fd)
     errno = 0;
@@ -141,25 +148,31 @@ void test_read() {
     int fd = open("test.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     write(fd, test_str, strlen(test_str));
     close(fd);
+
+    // Test read from stdin
+    ssize_t lib_result = read(0, lib_buf, BUFFER_SIZE-1);
+    ssize_t ft_result = ft_read(0, ft_buf, BUFFER_SIZE-1);
+    success &= (lib_result == ft_result && strcmp(lib_buf, ft_buf) == 0);
+
     
     // Test normal read
     fd = open("test.txt", O_RDONLY);
-    ssize_t lib_result = read(fd, lib_buf, 99);
+    lib_result = read(fd, lib_buf, BUFFER_SIZE-1);
     close(fd);
     
     fd = open("test.txt", O_RDONLY);
-    ssize_t ft_result = ft_read(fd, ft_buf, 99);
+    ft_result = ft_read(fd, ft_buf, BUFFER_SIZE-1);
     close(fd);
     
     success &= (lib_result == ft_result && strcmp(lib_buf, ft_buf) == 0);
     
     // Test error case (invalid fd)
     errno = 0;
-    lib_result = read(-1, lib_buf, 99);
+    lib_result = read(-1, lib_buf, BUFFER_SIZE-1);
     int lib_errno = errno;
     
     errno = 0;
-    ft_result = ft_read(-1, ft_buf, 99);
+    ft_result = ft_read(-1, ft_buf, BUFFER_SIZE-1);
     int ft_errno = errno;
     
     success &= (lib_result == ft_result && lib_errno == ft_errno);
