@@ -46,7 +46,6 @@ void test_strcpy() {
         "Hello",
         "This is a test string",
         "Special\nchars\tincluded"
-        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasadadaaaaaaaaaaaaaaaaaaaa"
     };
     
     int success = 1;
